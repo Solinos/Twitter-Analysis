@@ -122,9 +122,10 @@ score.sentiment <- function(sentences, pos.words, neg.words, .progress='none')
 ##  .................. #< 4f58e0b44b2d2f1878b14c722a18c73c ># ..................
 ##  Data import                                                             ####
 
-tweetsearch <- c("LGBTI")
-social <- searchTwitter(tweetsearch, n = 1500, lang = 'en', since = '2017-01-01')
+tweetsearch <- c("yes vote")
+social <- searchTwitter(tweetsearch, n = 500, lang = 'en', since = '2017-07-01')
 head(social)
+# glimpse(social)
 
 hu.liu.pos  <- scan('positive-words.csv',what='character',comment.char = ';')
 hu.liu.neg  <- scan('negative-words.csv',what='character',comment.char = ';')
@@ -180,6 +181,42 @@ plot(rt_graph, layout=glay,
      edge.width=3,
      edge.color=hsv(h=.35, s=1, v=.7, alpha=0.4))
 title(main = "Tweeter Network Map - Fruchterman Reingold", col.main="blue")
+
+# Transform the table into the required graph format:
+bsk.network<-graph.data.frame(retweeter_poster, directed=F) #the 'directed' attribute specifies whether the edges are directed
+# or equivelent irrespective of the position (1st vs 2nd column). For directed graphs use 'directed=T'
+
+# Inspect the data:
+
+V(bsk.network) #prints the list of vertices (people)
+E(bsk.network) #prints the list of edges (relationships)
+degree(bsk.network) #print the number of edges per vertex (relationships per people)
+
+# First try. We can plot the graph right away but the results will usually be unsatisfactory:
+plot(bsk.network)
+
+#Subset the data. If we want to exclude people who are in the network only tangentially (participate in one or two relationships only)
+# we can exclude the by subsetting the graph on the basis of the 'degree':
+
+bad.vs<-V(bsk.network)[degree(bsk.network)<3] #identify those vertices part of less than three edges
+bsk.network<-delete.vertices(bsk.network, bad.vs) #exclude them from the graph
+
+V(bsk.network)$size<-degree(bsk.network)* 2.5
+
+#here the size of the vertices is specified by the degree of the vertex, so that people 
+# supervising more have get proportionally bigger dots. Getting the right scale gets some 
+# playing around with the parameters of the scale function (from the 'base' package)
+
+plot(bsk.network,				#the graph to be plotted
+     layout= layout.graphopt  ,	# the layout method. see the igraph documentation for details
+     main='Organizational network example',	#specifies the title
+     vertex.label.dist=0.5,			#puts the name labels slightly off the dots
+     vertex.frame.color='blue', 		#the color of the border of the dots 
+     vertex.label.color='black',		#the color of the name labels
+     vertex.label.font=2,			#the font of the name labels
+     vertex.label=V(bsk.network)$name,		#specifies the lables of the vertices. in this case the 'name' attribute is used
+     vertex.label.cex=1			#specifies the size of the font of the labels. can also be made to vary
+)
 
 plot(rt_graph, layout = clay,
      vertex.color=hsv(h=.35,s=1,v=.7,alpha=0.1),
